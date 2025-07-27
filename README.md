@@ -53,9 +53,19 @@ The included **installation script (`install.sh`) was specifically tested on Deb
 - Service stop: systemctl stop manage-ip
 - Show Logs: journalctl -u manage-ip -f
 
+## ▶️ Installation option 1
+- cd /opt
+- nano install.sh
+- copy and paste the content of install.sh
+- bash install.sh
 
-## ▶️ Installation
+## ▶️ Installation option 2
 ```bash
-cd /opt
+apt update
+apt install git -y
 git clone https://github.com/Benne1987/Manage-IP.git
+cd Manage-IP
+mv install.sh /opt/install.sh
+cd /opt
 bash install.sh
+```
