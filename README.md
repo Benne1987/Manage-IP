@@ -18,6 +18,11 @@
 - **Frontend:** HTML, CSS 
 - **Datenbank:** SQLite (standardmäßig, leicht anpassbar)
 
+### Management
+- Service starten: systemctl start manage-ip
+- Service stoppen: systemctl stop manage-ip
+- Logs anzeigen: journalctl -u manage-ip -f
+
 
 ## 🇬🇧 English
 **Manage IP ranges and devices through a simple web interface built with Django.**  
@@ -37,11 +42,14 @@
 - **Frontend:** HTML, CSS
 - **Database:** SQLite (by default, easily configurable)
 
+### Management
+- Service start: systemctl start manage-ip
+- Service stop: systemctl stop manage-ip
+- Show Logs: journalctl -u manage-ip -f
+
 
 ## ▶️ Installation
 ```bash
-git clone https://github.com/dein-benutzername/manage-ip.git
-cd manage-ip
-bash install_manage_ip.sh
-source venv/bin/activate
-python manage.py runserver
+cd /opt
+git clone https://github.com/manage-ip.git
+bash install.sh
