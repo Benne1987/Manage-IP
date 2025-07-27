@@ -51,5 +51,5 @@
 ## ▶️ Installation
 ```bash
 cd /opt
-git clone https://github.com/manage-ip.git
+git clone https://github.com/Benne1987/Manage-IP.git
 bash install.sh
