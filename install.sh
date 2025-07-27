@@ -760,7 +760,7 @@ cat > templates/ip_manager/index.html << 'EOF'
 <!-- Box 1 - Beschreibung -->
 <div class="description-box">
     <h2>IP-Adressverwaltung</h2>
-    <p>Hier kannst du deine IP-Adressbereiche und einzelne IP-Adressen übersichtlich verwalten. Erstelle zunächst in der linken Spalte einen      Adressbereich (z. B. „192.168.1.X“) mit einer passenden Beschreibung. Anschließend kannst du in der rechten Spalte einzelne IP-Adressen mit Geräteinformationen und Softwareeinträgen hinzufügen. <br>Weitere Infos: <a href="https://bennystechblog.de" target="_blank">Bennys Techblog</a> und Weitere Infos: <a href="https://github.com" target="_blank">Github Benny1987</a></p>
+    <p>Hier kannst du deine IP-Adressbereiche und einzelne IP-Adressen übersichtlich verwalten. Erstelle zunächst in der linken Spalte einen      Adressbereich (z. B. „192.168.1.X“) mit einer passenden Beschreibung. Anschließend kannst du in der rechten Spalte einzelne IP-Adressen mit Geräteinformationen und Softwareeinträgen hinzufügen. <br>Weitere Infos: <a href="https://bennystechblog.de" target="_blank">Bennys Techblog</a> und Weitere Infos: <a href="https://github.com" target="_blank">Github</a></p>
 </div>
 
 <!-- Main Content -->
@@ -795,7 +795,7 @@ cat > templates/ip_manager/index.html << 'EOF'
             {% else %}
                 <div class="empty-state">
                     <h3>Keine Adressbereiche</h3>
-                    <p>Erstellen Sie unten Ihren ersten Adressbereich.</p>
+                    <p>Erstelle unten den ersten Adressbereich.</p>
                 </div>
             {% endif %}
         </div>
@@ -907,14 +907,14 @@ cat > templates/ip_manager/index.html << 'EOF'
                 {% else %}
                     <div class="empty-state">
                         <h3>Keine IP-Adressen</h3>
-                        <p>Fügen Sie oben Ihre erste IP-Adresse für diesen Bereich hinzu.</p>
+                        <p>Füge oben deine erste IP-Adresse für diesen Bereich hinzu.</p>
                     </div>
                 {% endif %}
                 
             {% else %}
                 <div class="empty-state">
                     <h3>Kein Adressbereich ausgewählt</h3>
-                    <p>Wählen Sie links einen Adressbereich aus oder erstellen Sie einen neuen.</p>
+                    <p>Wähle links einen Adressbereich aus oder erstelle einen neuen.</p>
                 </div>
             {% endif %}
         </div>
