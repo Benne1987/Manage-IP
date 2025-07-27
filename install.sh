@@ -760,7 +760,7 @@ cat > templates/ip_manager/index.html << 'EOF'
 <!-- Box 1 - Beschreibung -->
 <div class="description-box">
     <h2>IP-Adressverwaltung</h2>
-    <p>Hier kannst du deine IP-Adressbereiche und einzelne IP-Adressen übersichtlich verwalten. Erstelle zunächst in der linken Spalte einen      Adressbereich (z. B. „192.168.1.X“) mit einer passenden Beschreibung. Anschließend kannst du in der rechten Spalte einzelne IP-Adressen mit Geräteinformationen und Softwareeinträgen hinzufügen. <br>Weitere Infos: <a href="https://bennystechblog.de" target="_blank">Bennys Techblog</a> und Weitere Infos: <a href="https://github.com" target="_blank">Github</a></p>
+    <p>Hier kannst du deine IP-Adressbereiche und einzelne IP-Adressen übersichtlich verwalten. Erstelle zunächst in der linken Spalte einen      Adressbereich (z. B. „192.168.1.X“) mit einer passenden Beschreibung. Anschließend kannst du in der rechten Spalte einzelne IP-Adressen mit Geräteinformationen und Softwareeinträgen hinzufügen. <br>Weitere Infos: <a href="https://bennystechblog.de" target="_blank">Bennys Techblog</a> und Weitere Infos: <a href="https://github.com/benne1987" target="_blank">Github</a></p>
 </div>
 
 <!-- Main Content -->
