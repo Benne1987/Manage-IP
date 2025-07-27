@@ -3,6 +3,9 @@
 ## 🇩🇪 Deutsch
 **Verwaltung von IP-Adressbereichen und Geräten über ein simples Webinterface mit Django.**
 
+Manage IP wurde auf Basis von **Debian 12 (Bookworm)** entwickelt und getestet. Die Anwendung nutzt Standardpakete wie `python3`, `venv` und `sqlite3`. Sie läuft auf allen modernen Debian-basierten Linux-Systemen.  
+Das mitgelieferte **Installationsskript (`install.sh`) wurde speziell unter Debian 12 getestet** und setzt eine Standard-Umgebung voraus.
+
 **Manage IP** ist eine webbasierte Anwendung zur strukturierten Verwaltung von IP-Adressbereichen und einzelnen Netzwerkgeräten. Die Software basiert auf **Django (Python)** und einem schlichten **HTML/CSS-Frontend**. Sie eignet sich ideal für kleine bis mittlere Netzwerke, z. B. zur Dokumentation von Kamera-Netzwerken, Büro-Infrastruktur oder Testumgebungen.
 
 ### Funktionen
@@ -26,6 +29,9 @@
 
 ## 🇬🇧 English
 **Manage IP ranges and devices through a simple web interface built with Django.**  
+
+Manage IP was developed and tested on **Debian 12 (Bookworm)**. It uses standard packages such as `python3`, `venv`, and `sqlite3`, and runs reliably on any modern Debian-based Linux system.  
+The included **installation script (`install.sh`) was specifically tested on Debian 12** and assumes a default environment.
 
 **Manage IP** is a web-based application for structured management of IP address ranges and individual network devices. The software is built with **Django (Python)** and a minimal **HTML/CSS frontend**. It is ideal for small to medium-sized networks, such as camera systems, office infrastructure, or test environments.
 
