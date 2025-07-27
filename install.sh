@@ -907,7 +907,7 @@ cat > templates/ip_manager/index.html << 'EOF'
                 {% else %}
                     <div class="empty-state">
                         <h3>Keine IP-Adressen</h3>
-                        <p>Füge oben deine erste IP-Adresse für diesen Bereich hinzu.</p>
+                        <p>Füge oben die erste IP-Adresse für diesen Bereich hinzu.</p>
                     </div>
                 {% endif %}
                 
