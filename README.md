@@ -62,10 +62,11 @@ The included **installation script (`install.sh`) was specifically tested on Deb
 ## ▶️ Installation option 2
 ```bash
 apt update
-apt install git -y
+apt install git -y && apt install dos2unix -y
 git clone https://github.com/Benne1987/Manage-IP.git
 cd Manage-IP
 mv install.sh /opt/install.sh
 cd /opt
+dos2unix install.sh
 bash install.sh
 ```
