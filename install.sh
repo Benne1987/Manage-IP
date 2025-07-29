@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Manage IP - Vollständiges Setup Script für Debian 12
+# Manage IP - Vollständiges Setup Script für Debian 12 mit Bearbeiten-Funktionen
 # Ausführung in /opt/: sudo bash setup.sh
 
 set -e  # Script bei Fehler beenden
@@ -289,7 +289,7 @@ class IPAddressAdmin(admin.ModelAdmin):
     ordering = ['address_range', 'ip_address']
 EOF
 
-# ip_manager/views.py (ERWEITERT)
+# ip_manager/views.py (ERWEITERT mit Bearbeiten-Funktionen)
 cat > ip_manager/views.py << 'EOF'
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse
@@ -304,8 +304,26 @@ def index(request):
     address_ranges = AddressRange.objects.all()
     selected_range = None
     ip_addresses = []
+    edit_range = None
+    edit_ip = None
     
-    if request.GET.get('range_id'):
+    # Bearbeiten-Modi
+    if request.GET.get('edit_range'):
+        try:
+            edit_range = AddressRange.objects.get(id=request.GET.get('edit_range'))
+        except AddressRange.DoesNotExist:
+            pass
+    
+    if request.GET.get('edit_ip'):
+        try:
+            edit_ip = IPAddress.objects.get(id=request.GET.get('edit_ip'))
+            selected_range = edit_ip.address_range
+            ip_addresses = IPAddress.objects.filter(address_range=selected_range)
+        except IPAddress.DoesNotExist:
+            pass
+    
+    # Normaler Anzeigemodus
+    if request.GET.get('range_id') and not edit_ip:
         try:
             selected_range = AddressRange.objects.get(id=request.GET.get('range_id'))
             ip_addresses = IPAddress.objects.filter(address_range=selected_range)
@@ -316,6 +334,8 @@ def index(request):
         'address_ranges': address_ranges,
         'selected_range': selected_range,
         'ip_addresses': ip_addresses,
+        'edit_range': edit_range,
+        'edit_ip': edit_ip,
     }
     return render(request, 'ip_manager/index.html', context)
 
@@ -333,6 +353,27 @@ def add_address_range(request):
             messages.error(request, f'Fehler beim Erstellen des Adressbereichs: {str(e)}')
     else:
         messages.error(request, 'Bitte geben Sie einen gültigen Adressbereich ein.')
+    
+    return redirect('index')
+
+@require_POST
+def edit_address_range(request, range_id):
+    """Adressbereich bearbeiten"""
+    try:
+        address_range = get_object_or_404(AddressRange, id=range_id)
+        range_name = request.POST.get('range_name', '').strip()
+        description = request.POST.get('description', '').strip()
+        
+        if range_name:
+            old_name = address_range.name
+            address_range.name = range_name
+            address_range.description = description
+            address_range.save()
+            messages.success(request, f'Adressbereich "{old_name}" wurde erfolgreich zu "{range_name}" geändert.')
+        else:
+            messages.error(request, 'Bitte geben Sie einen gültigen Adressbereich ein.')
+    except Exception as e:
+        messages.error(request, f'Fehler beim Bearbeiten: {str(e)}')
     
     return redirect('index')
 
@@ -375,6 +416,31 @@ def add_ip_address(request):
     return redirect(f'/?range_id={range_id}')
 
 @require_POST
+def edit_ip_address(request, ip_id):
+    """IP-Adresse bearbeiten"""
+    try:
+        ip_address_obj = get_object_or_404(IPAddress, id=ip_id)
+        ip_address = request.POST.get('ip_address', '').strip()
+        device_name = request.POST.get('device_name', '').strip()
+        software = request.POST.get('software', '').strip()
+        
+        if ip_address:
+            old_ip = ip_address_obj.ip_address
+            ip_address_obj.ip_address = ip_address
+            ip_address_obj.device_name = device_name
+            ip_address_obj.software = software
+            ip_address_obj.save()
+            messages.success(request, f'IP-Adresse "{old_ip}" wurde erfolgreich zu "{ip_address}" geändert.')
+        else:
+            messages.error(request, 'Bitte geben Sie eine gültige IP-Adresse ein.')
+            
+        range_id = ip_address_obj.address_range.id
+        return redirect(f'/?range_id={range_id}')
+    except Exception as e:
+        messages.error(request, f'Fehler beim Bearbeiten: {str(e)}')
+        return redirect('index')
+
+@require_POST
 def delete_ip_address(request, ip_id):
     """IP-Adresse löschen"""
     try:
@@ -389,7 +455,7 @@ def delete_ip_address(request, ip_id):
         return redirect('index')
 EOF
 
-# ip_manager/urls.py
+# ip_manager/urls.py (ERWEITERT)
 cat > ip_manager/urls.py << 'EOF'
 from django.urls import path
 from . import views
@@ -397,13 +463,15 @@ from . import views
 urlpatterns = [
     path('', views.index, name='index'),
     path('add-range/', views.add_address_range, name='add_address_range'),
+    path('edit-range/<int:range_id>/', views.edit_address_range, name='edit_address_range'),
     path('delete-range/<int:range_id>/', views.delete_address_range, name='delete_address_range'),
     path('add-ip/', views.add_ip_address, name='add_ip_address'),
+    path('edit-ip/<int:ip_id>/', views.edit_ip_address, name='edit_ip_address'),
     path('delete-ip/<int:ip_id>/', views.delete_ip_address, name='delete_ip_address'),
 ]
 EOF
 
-# 8. CSS-Datei erstellen (MIT ALLEN FIXES)
+# 8. CSS-Datei erstellen (MIT ALLEN FIXES UND EDIT-STYLES)
 print_status "Erstelle CSS-Datei..."
 cat > static/css/style.css << 'EOF'
 /* Manage IP - Hauptstil-Datei */
@@ -541,6 +609,24 @@ body {
     box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
 }
 
+/* Edit Form Styles */
+.edit-form {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.edit-form h4 {
+    color: #856404;
+    margin-bottom: 15px;
+}
+
+.edit-form-buttons {
+    margin-top: 15px;
+}
+
 /* Button Styles */
 .btn {
     padding: 10px 20px;
@@ -561,6 +647,24 @@ body {
 
 .btn-primary:hover {
     background-color: #5a67d8;
+}
+
+.btn-secondary {
+    background-color: #6c757d;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background-color: #5a6268;
+}
+
+.btn-warning {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.btn-warning:hover {
+    background-color: #e0a800;
 }
 
 .btn-danger {
@@ -598,6 +702,11 @@ body {
     border-color: #667eea;
 }
 
+.range-item.editing {
+    background: #fff3cd;
+    border-color: #ffeaa7;
+}
+
 .range-item-header {
     display: flex;
     justify-content: space-between;
@@ -611,6 +720,11 @@ body {
 
 .range-item-content:hover {
     opacity: 0.8;
+}
+
+.range-item-buttons {
+    display: flex;
+    gap: 5px;
 }
 
 .range-description {
@@ -632,11 +746,21 @@ body {
     margin-bottom: 10px;
 }
 
+.ip-item.editing {
+    background: #fff3cd;
+    border-color: #ffeaa7;
+}
+
 .ip-item-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
     margin-bottom: 10px;
+}
+
+.ip-item-buttons {
+    display: flex;
+    gap: 5px;
 }
 
 .ip-address {
@@ -695,12 +819,20 @@ body {
     .ip-details-box {
         flex: none;
     }
+    
+    .range-item-buttons,
+    .ip-item-buttons {
+        flex-direction: column;
+        gap: 2px;
+    }
 }
 
 /* Farbschema Variablen für einfache Anpassungen */
 :root {
     --primary-color: #667eea;
     --primary-dark: #5a67d8;
+    --warning-color: #ffc107;
+    --warning-dark: #e0a800;
     --danger-color: #e53e3e;
     --danger-dark: #c53030;
     --background-color: #f5f5f5;
@@ -751,7 +883,7 @@ cat > templates/base.html << 'EOF'
 </html>
 EOF
 
-# index.html (REPARIERT - Geräte funktioniert)
+# index.html (ERWEITERT mit Bearbeiten-Funktionen)
 cat > templates/ip_manager/index.html << 'EOF'
 {% extends 'base.html' %}
 {% load static %}
@@ -760,7 +892,7 @@ cat > templates/ip_manager/index.html << 'EOF'
 <!-- Box 1 - Beschreibung -->
 <div class="description-box">
     <h2>IP-Adressverwaltung</h2>
-    <p>Hier kannst du deine IP-Adressbereiche und einzelne IP-Adressen übersichtlich verwalten. Erstelle zunächst in der linken Spalte einen      Adressbereich (z. B. „192.168.1.X") mit einer passenden Beschreibung. Anschließend kannst du in der rechten Spalte einzelne IP-Adressen mit Geräteinformationen und Softwareeinträgen hinzufügen. <br>Weitere Infos: <a href="https://bennystechblog.de" target="_blank">Bennys Techblog</a> und <a href="https://github.com/benne1987" target="_blank">Github</a></p>
+    <p>Hier kannst du deine IP-Adressbereiche und einzelne IP-Adressen übersichtlich verwalten. Erstelle zunächst in der linken Spalte einen Adressbereich (z. B. „192.168.1.X") mit einer passenden Beschreibung. Anschließend kannst du in der rechten Spalte einzelne IP-Adressen mit Geräteinformationen und Softwareeinträgen hinzufügen. <br>Weitere Infos: <a href="https://bennystechblog.de" target="_blank">Bennys Techblog</a> und <a href="https://github.com/benne1987" target="_blank">Github</a></p>
 </div>
 
 <!-- Main Content -->
@@ -774,22 +906,54 @@ cat > templates/ip_manager/index.html << 'EOF'
         <div class="address-ranges-content">
             {% if address_ranges %}
                 {% for range in address_ranges %}
-                    <div class="range-item {% if selected_range and range.id == selected_range.id %}active{% endif %}">
-                        <div class="range-item-header">
-                            <div onclick="selectRange({{ range.id }})" style="cursor: pointer; flex: 1;">
-                                <div><strong>{{ range.name }}</strong></div>
-                                {% if range.description %}
-                                    <div class="range-description">{{ range.description }}</div>
-                                {% endif %}
-                            </div>
-                            <form method="post" action="{% url 'delete_address_range' range.id %}" 
-                                  style="display: inline;" 
-                                  onsubmit="return confirm('Adressbereich \'{{ range.name }}\' wirklich löschen?');"
-                                  onclick="event.stopPropagation();">
+                    <div class="range-item {% if selected_range and range.id == selected_range.id %}active{% endif %} {% if edit_range and range.id == edit_range.id %}editing{% endif %}">
+                        {% if edit_range and range.id == edit_range.id %}
+                            <!-- Bearbeiten-Modus für Adressbereich -->
+                            <form method="post" action="{% url 'edit_address_range' range.id %}">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-danger btn-small" onclick="event.stopPropagation();">Löschen</button>
+                                <div class="form-group">
+                                    <label for="edit_range_name">Adressbereich:</label>
+                                    <input type="text" 
+                                           id="edit_range_name" 
+                                           name="range_name" 
+                                           class="form-control" 
+                                           value="{{ edit_range.name }}"
+                                           required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="edit_description">Beschreibung:</label>
+                                    <input type="text" 
+                                           id="edit_description" 
+                                           name="description" 
+                                           class="form-control" 
+                                           value="{{ edit_range.description }}">
+                                </div>
+                                <div class="edit-form-buttons">
+                                    <button type="submit" class="btn btn-primary btn-small">Speichern</button>
+                                    <a href="/" class="btn btn-secondary btn-small">Abbrechen</a>
+                                </div>
                             </form>
-                        </div>
+                        {% else %}
+                            <!-- Normal-Modus für Adressbereich -->
+                            <div class="range-item-header">
+                                <div onclick="selectRange({{ range.id }})" style="cursor: pointer; flex: 1;">
+                                    <div><strong>{{ range.name }}</strong></div>
+                                    {% if range.description %}
+                                        <div class="range-description">{{ range.description }}</div>
+                                    {% endif %}
+                                </div>
+                                <div class="range-item-buttons">
+                                    <a href="/?edit_range={{ range.id }}" class="btn btn-warning btn-small" onclick="event.stopPropagation();">Ändern</a>
+                                    <form method="post" action="{% url 'delete_address_range' range.id %}" 
+                                          style="display: inline;" 
+                                          onsubmit="return confirm('Adressbereich \'{{ range.name }}\' wirklich löschen?');"
+                                          onclick="event.stopPropagation();">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-danger btn-small" onclick="event.stopPropagation();">Löschen</button>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endif %}
                     </div>
                 {% endfor %}
             {% else %}
@@ -843,68 +1007,122 @@ cat > templates/ip_manager/index.html << 'EOF'
         <div class="ip-details-content">
             {% if selected_range %}
                 <!-- IP-Adresse hinzufügen Form -->
-                <form method="post" action="{% url 'add_ip_address' %}" style="margin-bottom: 30px;">
-                    {% csrf_token %}
-                    <input type="hidden" name="range_id" value="{{ selected_range.id }}">
-                    
-                    <div style="display: flex; gap: 15px; margin-bottom: 15px;">
-                        <div class="form-group" style="flex: 1;">
-                            <label for="ip_address">IP-Adresse:</label>
-                            <input type="text" 
-                                   id="ip_address" 
-                                   name="ip_address" 
-                                   class="form-control" 
-                                   placeholder="z.B. 192.168.1.10"
-                                   required>
+                {% if not edit_ip %}
+                    <form method="post" action="{% url 'add_ip_address' %}" style="margin-bottom: 30px;">
+                        {% csrf_token %}
+                        <input type="hidden" name="range_id" value="{{ selected_range.id }}">
+                        
+                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                            <div class="form-group" style="flex: 1;">
+                                <label for="ip_address">IP-Adresse:</label>
+                                <input type="text" 
+                                       id="ip_address" 
+                                       name="ip_address" 
+                                       class="form-control" 
+                                       placeholder="z.B. 192.168.1.10"
+                                       required>
+                            </div>
+                            
+                            <div class="form-group" style="flex: 1;">
+                                <label for="device_name">Gerätename:</label>
+                                <input type="text" 
+                                       id="device_name" 
+                                       name="device_name" 
+                                       class="form-control" 
+                                       placeholder="z.B. Server-01">
+                            </div>
+                            
+                            <div class="form-group" style="flex: 1;">
+                                <label for="software">Software:</label>
+                                <input type="text" 
+                                       id="software" 
+                                       name="software" 
+                                       class="form-control" 
+                                       placeholder="z.B. Ubuntu 22.04">
+                            </div>
                         </div>
                         
-                        <div class="form-group" style="flex: 1;">
-                            <label for="device_name">Gerätename:</label>
-                            <input type="text" 
-                                   id="device_name" 
-                                   name="device_name" 
-                                   class="form-control" 
-                                   placeholder="z.B. Server-01">
-                        </div>
-                        
-                        <div class="form-group" style="flex: 1;">
-                            <label for="software">Software:</label>
-                            <input type="text" 
-                                   id="software" 
-                                   name="software" 
-                                   class="form-control" 
-                                   placeholder="z.B. Ubuntu 22.04">
-                        </div>
-                    </div>
+                        <button type="submit" class="btn btn-primary">IP-Adresse speichern</button>
+                    </form>
                     
-                    <button type="submit" class="btn btn-primary">IP-Adresse speichern</button>
-                </form>
-                
-                <hr style="margin: 30px 0; border: 0; border-top: 1px solid #e9ecef;">
+                    <hr style="margin: 30px 0; border: 0; border-top: 1px solid #e9ecef;">
+                {% endif %}
                 
                 <!-- IP-Adressen Liste -->
                 {% if ip_addresses %}
                     {% for ip in ip_addresses %}
-                        <div class="ip-item">
-                            <div class="ip-item-header">
-                                <div>
-                                    <div class="ip-address">{{ ip.ip_address }}</div>
-                                    <div class="ip-details">
-                                        {% if ip.device_name %}
-                                            <strong>Gerät:</strong> {{ ip.device_name }}<br>
-                                        {% endif %}
-                                        {% if ip.software %}
-                                            <strong>Software:</strong> {{ ip.software }}<br>
-                                        {% endif %}
-                                        <strong>Erstellt:</strong> {{ ip.created_at|date:"d.m.Y H:i" }}
+                        <div class="ip-item {% if edit_ip and ip.id == edit_ip.id %}editing{% endif %}">
+                            {% if edit_ip and ip.id == edit_ip.id %}
+                                <!-- Bearbeiten-Modus für IP-Adresse -->
+                                <div class="edit-form">
+                                    <h4>IP-Adresse bearbeiten</h4>
+                                    <form method="post" action="{% url 'edit_ip_address' ip.id %}">
+                                        {% csrf_token %}
+                                        <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                                            <div class="form-group" style="flex: 1;">
+                                                <label for="edit_ip_address">IP-Adresse:</label>
+                                                <input type="text" 
+                                                       id="edit_ip_address" 
+                                                       name="ip_address" 
+                                                       class="form-control" 
+                                                       value="{{ edit_ip.ip_address }}"
+                                                       required>
+                                            </div>
+                                            
+                                            <div class="form-group" style="flex: 1;">
+                                                <label for="edit_device_name">Gerätename:</label>
+                                                <input type="text" 
+                                                       id="edit_device_name" 
+                                                       name="device_name" 
+                                                       class="form-control" 
+                                                       value="{{ edit_ip.device_name }}">
+                                            </div>
+                                            
+                                            <div class="form-group" style="flex: 1;">
+                                                <label for="edit_software">Software:</label>
+                                                <input type="text" 
+                                                       id="edit_software" 
+                                                       name="software" 
+                                                       class="form-control" 
+                                                       value="{{ edit_ip.software }}">
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="edit-form-buttons">
+                                            <button type="submit" class="btn btn-primary">Speichern</button>
+                                            <a href="/?range_id={{ selected_range.id }}" class="btn btn-secondary">Abbrechen</a>
+                                        </div>
+                                    </form>
+                                </div>
+                            {% else %}
+                                <!-- Normal-Modus für IP-Adresse -->
+                                <div class="ip-item-header">
+                                    <div>
+                                        <div class="ip-address">{{ ip.ip_address }}</div>
+                                        <div class="ip-details">
+                                            {% if ip.device_name %}
+                                                <strong>Gerät:</strong> {{ ip.device_name }}<br>
+                                            {% endif %}
+                                            {% if ip.software %}
+                                                <strong>Software:</strong> {{ ip.software }}<br>
+                                            {% endif %}
+                                            <strong>Erstellt:</strong> {{ ip.created_at|date:"d.m.Y H:i" }}
+                                            {% if ip.updated_at != ip.created_at %}
+                                                <br><strong>Geändert:</strong> {{ ip.updated_at|date:"d.m.Y H:i" }}
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="ip-item-buttons">
+                                        <a href="/?edit_ip={{ ip.id }}" class="btn btn-warning btn-small">Ändern</a>
+                                        <form method="post" action="{% url 'delete_ip_address' ip.id %}" 
+                                              style="display: inline;"
+                                              onsubmit="return confirm('IP-Adresse \'{{ ip.ip_address }}\' wirklich löschen?');">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-danger btn-small">Löschen</button>
+                                        </form>
                                     </div>
                                 </div>
-                                <form method="post" action="{% url 'delete_ip_address' ip.id %}" 
-                                      onsubmit="return confirm('IP-Adresse \'{{ ip.ip_address }}\' wirklich löschen?');">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-danger btn-small">Löschen</button>
-                                </form>
-                            </div>
+                            {% endif %}
                         </div>
                     {% endfor %}
                 {% else %}
@@ -1066,8 +1284,10 @@ echo "- Service stoppen: systemctl stop manage-ip"
 echo "- Logs anzeigen: journalctl -u manage-ip -f"
 echo "- Django Shell: cd /opt/manage-ip && source venv/bin/activate && python manage.py shell"
 echo
+echo "✨ NEUE FUNKTIONEN:"
+echo "- ✅ Adressbereiche können jetzt bearbeitet werden (Ändern-Button)"
+echo "- ✅ IP-Adressen können jetzt bearbeitet werden (Ändern-Button)"
+echo "- ✅ Visuelle Kennzeichnung von Bearbeitungsmodi"
+echo "- ✅ Anzeige der letzten Änderung bei IP-Adressen"
 echo
-echo "🎉 Das System ist jetzt unter http://$(hostname -I | awk '{print $1}') erreichbar!" if ip.device_name %}
-                                            <strong>Gerät:</strong> {{ ip.device_name }}<br>
-                                        {% endif %}
-                                        
+echo "🎉 Das erweiterte System ist jetzt unter http://$(hostname -I | awk '{print $1}') erreichbar!"
